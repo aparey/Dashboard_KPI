@@ -6,7 +6,7 @@ from datetime import datetime
 # Set Streamlit page configuration
 st.set_page_config(page_title="SuperStore KPI Dashboard", layout="wide")
 
-# Load data
+# ---- Load Data ----
 @st.cache_data
 def load_data():
     df = pd.read_excel("Sample - Superstore.xlsx", engine="openpyxl")
@@ -15,24 +15,21 @@ def load_data():
 
 df_original = load_data()
 
-# Sidebar filters
+# ---- Sidebar Filters ----
 st.sidebar.title("🔍 Filters")
 
-def filter_options(df, column, prev_selection):
-    options = sorted(df[column].dropna().unique())
-    return ["All"] + options if prev_selection == "All" else ["All"] + sorted(df[df[prev_selection] == selected_filters[prev_selection]][column].dropna().unique())
-
+# Dropdown filters for categorical data
 selected_filters = {}
-
 filter_columns = ["Region", "State", "City", "Category", "Sub-Category"]
-for col in filter_columns:
-    prev_col = filter_columns[filter_columns.index(col) - 1] if filter_columns.index(col) > 0 else "All"
-    selected_filters[col] = st.sidebar.selectbox(f"Select {col}", options=filter_options(df_original, col, prev_col))
 
-# Date range filter
+for col in filter_columns:
+    selected_filters[col] = st.sidebar.selectbox(
+        f"Select {col}", 
+        options=["All"] + sorted(df_original[col].dropna().unique())
+    )
+
 # Date Range Filter with Slider
 min_date, max_date = df_original["Order Date"].min(), df_original["Order Date"].max()
-
 st.sidebar.subheader("Date Range")
 from_date, to_date = st.sidebar.slider(
     "Select Date Range:",
@@ -45,7 +42,7 @@ from_date, to_date = st.sidebar.slider(
 if from_date > to_date:
     st.sidebar.error("From Date must be earlier than To Date.")
 
-# Apply filters
+# ---- Apply Filters ----
 def filter_data(df, filters, from_date, to_date):
     for key, value in filters.items():
         if value != "All":
@@ -54,15 +51,15 @@ def filter_data(df, filters, from_date, to_date):
 
 df = filter_data(df_original, selected_filters, from_date, to_date)
 
-# Page title
+# ---- Page Title ----
 st.title("SuperStore KPI Dashboard")
 
-# Empty data handling
+# ---- Empty Data Handling ----
 if df.empty:
     st.warning("⚠ No data available. Please adjust your filters.")
     st.stop()
 
-# KPI calculation
+# ---- KPI Calculation ----
 kpi_metrics = {
     "Sales": df["Sales"].sum(),
     "Quantity Sold": df["Quantity"].sum(),
@@ -70,7 +67,7 @@ kpi_metrics = {
     "Margin Rate": (df["Profit"].sum() / df["Sales"].sum() * 100) if df["Sales"].sum() != 0 else 0
 }
 
-# KPI display with tooltips
+# ---- KPI Display with Tooltips ----
 kpi_cols = st.columns(4)
 for col, (title, value) in zip(kpi_cols, kpi_metrics.items()):
     if "Rate" in title:
@@ -78,7 +75,7 @@ for col, (title, value) in zip(kpi_cols, kpi_metrics.items()):
     else:
         col.metric(label=title, value=f"${value:,.2f}" if "Quantity" not in title else f"{value:,.0f}", help=f"{title} is the total {title.lower()} within the selected period")
 
-# KPI selection for visualization
+# ---- KPI Selection for Visualization ----
 st.subheader("Visualize KPI Trends & Top Products")
 selected_kpi = st.selectbox("Select KPI to display:", options=list(kpi_metrics.keys()))
 
@@ -102,7 +99,7 @@ if selected_kpi == "Quantity Sold":
 
 top_products = top_products.nlargest(10, selected_kpi_col)
 
-# Side-by-side charts
+# ---- Side-by-Side Charts ----
 col_left, col_right = st.columns(2)
 
 with col_left:
@@ -119,7 +116,7 @@ with col_right:
     fig_bar.update_layout(height=400, yaxis={"categoryorder": "total ascending"})
     st.plotly_chart(fig_bar, use_container_width=True)
 
-# Additional insights
+# ---- Additional Insights ----
 st.subheader("Additional Insights")
 if st.checkbox("Show Detailed Data"):
     st.write(df)
