@@ -67,7 +67,7 @@ for col, (title, value) in zip(kpi_cols, kpi_metrics.items()):
     if "Rate" in title:
         col.metric(label=title, value=f"{value:.2f}%", help=f"{title} is calculated as (Profit/Sales)*100")
     else:
-        col.metric(label=title, value=f"${value:,.2f}", help=f"{title} is the total {title.lower()} within the selected period")
+        col.metric(label=title, value=f"${value:,.2f}" if "Quantity" not in title else f"{value:,.0f}", help=f"{title} is the total {title.lower()} within the selected period")
 
 # KPI selection for visualization
 st.subheader("Visualize KPI Trends & Top Products")
@@ -82,7 +82,6 @@ time_grouped["Margin Rate"] = (time_grouped["Profit"] / time_grouped["Sales"]).f
 x_column = "Year-Month" if time_aggregation == "Monthly" else "Order Date"
 
 # Top 10 Products
-# Top 10 Products
 selected_kpi_col = "Margin Rate" if selected_kpi == "Margin Rate" else selected_kpi
 
 top_products = df.groupby("Product Name").agg({"Sales": "sum", "Quantity": "sum", "Profit": "sum"}).reset_index()
@@ -94,6 +93,22 @@ if selected_kpi == "Quantity Sold":
 
 top_products = top_products.nlargest(10, selected_kpi_col)
 
+# Side-by-side charts
+col_left, col_right = st.columns(2)
+
+with col_left:
+    fig_time = px.line(time_grouped, x=x_column, y=selected_kpi_col, markers=True,
+                       title=f"{selected_kpi} Over Time", labels={x_column: "Date", selected_kpi_col: selected_kpi},
+                       template="plotly_white")
+    fig_time.update_layout(height=400)
+    st.plotly_chart(fig_time, use_container_width=True)
+
+with col_right:
+    fig_bar = px.bar(top_products, x=selected_kpi_col, y="Product Name", orientation="h",
+                     title=f"Top 10 Products by {selected_kpi}", color=selected_kpi_col, color_continuous_scale="Blues",
+                     template="plotly_white")
+    fig_bar.update_layout(height=400, yaxis={"categoryorder": "total ascending"})
+    st.plotly_chart(fig_bar, use_container_width=True)
 
 # Additional insights
 st.subheader("Additional Insights")
