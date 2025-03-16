@@ -30,8 +30,17 @@ for col in filter_columns:
     selected_filters[col] = st.sidebar.selectbox(f"Select {col}", options=filter_options(df_original, col, prev_col))
 
 # Date range filter
+# Date Range Filter with Slider
 min_date, max_date = df_original["Order Date"].min(), df_original["Order Date"].max()
-from_date, to_date = st.sidebar.date_input("Date Range", [min_date, max_date], min_value=min_date, max_value=max_date)
+
+st.sidebar.subheader("Date Range")
+from_date, to_date = st.sidebar.slider(
+    "Select Date Range:",
+    min_value=min_date,
+    max_value=max_date,
+    value=(min_date, max_date),
+    format="YYYY-MM-DD",
+)
 
 if from_date > to_date:
     st.sidebar.error("From Date must be earlier than To Date.")
