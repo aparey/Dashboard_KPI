@@ -32,10 +32,10 @@ for col in filter_columns:
 
 # Date Range Filter
 min_date, max_date = df_original["Order Date"].min(), df_original["Order Date"].max()
-from_date, to_date = st.sidebar.date_input("📅 Date Range", [min_date, max_date], min_value=min_date, max_value=max_date)
+from_date, to_date = st.sidebar.date_input("Date Range", [min_date, max_date], min_value=min_date, max_value=max_date)
 
 if from_date > to_date:
-    st.sidebar.error("🚨 From Date must be earlier than To Date.")
+    st.sidebar.error("From Date must be earlier than To Date.")
 
 # ---- Apply Filters ----
 def filter_data(df, filters, from_date, to_date):
@@ -47,7 +47,7 @@ def filter_data(df, filters, from_date, to_date):
 df = filter_data(df_original, selected_filters, from_date, to_date)
 
 # ---- Page Title ----
-st.title("📊 SuperStore KPI Dashboard")
+st.title(" SuperStore KPI Dashboard")
 
 # ---- Empty Data Handling ----
 if df.empty:
@@ -98,7 +98,7 @@ with col_left:
 
 with col_right:
     fig_bar = px.bar(top_products, x=selected_kpi_col, y="Product Name", orientation="h",
-                     title=f"🏆 Top 10 Products by {selected_kpi}", color=selected_kpi_col, color_continuous_scale="Blues",
+                     title=f"Top 10 Products by {selected_kpi}", color=selected_kpi_col, color_continuous_scale="Blues",
                      template="plotly_white")
     fig_bar.update_layout(height=400, yaxis={"categoryorder": "total ascending"})
     st.plotly_chart(fig_bar, use_container_width=True)
