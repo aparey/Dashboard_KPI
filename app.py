@@ -6,7 +6,7 @@ from datetime import datetime
 # Set Streamlit page configuration
 st.set_page_config(page_title="SuperStore KPI Dashboard", layout="wide")
 
-# ---- Load Data ----
+# Load data
 @st.cache_data
 def load_data():
     df = pd.read_excel("Sample - Superstore.xlsx", engine="openpyxl")
@@ -15,7 +15,7 @@ def load_data():
 
 df_original = load_data()
 
-# ---- Sidebar Filters ----
+# Sidebar filters
 st.sidebar.title("🔍 Filters")
 
 def filter_options(df, column, prev_selection):
@@ -24,20 +24,19 @@ def filter_options(df, column, prev_selection):
 
 selected_filters = {}
 
-# Define filter categories
 filter_columns = ["Region", "State", "City", "Category", "Sub-Category"]
 for col in filter_columns:
     prev_col = filter_columns[filter_columns.index(col) - 1] if filter_columns.index(col) > 0 else "All"
     selected_filters[col] = st.sidebar.selectbox(f"Select {col}", options=filter_options(df_original, col, prev_col))
 
-# Date Range Filter
+# Date range filter
 min_date, max_date = df_original["Order Date"].min(), df_original["Order Date"].max()
 from_date, to_date = st.sidebar.date_input("Date Range", [min_date, max_date], min_value=min_date, max_value=max_date)
 
 if from_date > to_date:
     st.sidebar.error("From Date must be earlier than To Date.")
 
-# ---- Apply Filters ----
+# Apply filters
 def filter_data(df, filters, from_date, to_date):
     for key, value in filters.items():
         if value != "All":
@@ -46,15 +45,15 @@ def filter_data(df, filters, from_date, to_date):
 
 df = filter_data(df_original, selected_filters, from_date, to_date)
 
-# ---- Page Title ----
-st.title(" SuperStore KPI Dashboard")
+# Page title
+st.title("SuperStore KPI Dashboard")
 
-# ---- Empty Data Handling ----
+# Empty data handling
 if df.empty:
     st.warning("⚠ No data available. Please adjust your filters.")
     st.stop()
 
-# ---- KPI Calculation ----
+# KPI calculation
 kpi_metrics = {
     "Sales": df["Sales"].sum(),
     "Quantity Sold": df["Quantity"].sum(),
@@ -62,14 +61,17 @@ kpi_metrics = {
     "Margin Rate": (df["Profit"].sum() / df["Sales"].sum() * 100) if df["Sales"].sum() != 0 else 0
 }
 
-# ---- KPI Display ----
+# KPI display with tooltips
 kpi_cols = st.columns(4)
 for col, (title, value) in zip(kpi_cols, kpi_metrics.items()):
-    col.metric(label=title, value=f"${value:,.2f}" if "Rate" not in title else f"{value:.2f}%")
+    if "Rate" in title:
+        col.metric(label=title, value=f"{value:.2f}%", help=f"{title} is calculated as (Profit/Sales)*100")
+    else:
+        col.metric(label=title, value=f"${value:,.2f}", help=f"{title} is the total {title.lower()} within the selected period")
 
-# ---- KPI Selection for Visualization ----
-st.subheader("📈 Visualize KPI Trends & Top Products")
-selected_kpi = st.radio("Select KPI to display:", options=list(kpi_metrics.keys()), horizontal=True)
+# KPI selection for visualization
+st.subheader("Visualize KPI Trends & Top Products")
+selected_kpi = st.selectbox("Select KPI to display:", options=list(kpi_metrics.keys()))
 
 time_aggregation = st.selectbox("Group Data By:", ["Daily", "Monthly"])
 
@@ -86,7 +88,7 @@ top_products = df.groupby("Product Name").agg({"Sales": "sum", "Quantity": "sum"
 top_products["Margin Rate"] = (top_products["Profit"] / top_products["Sales"]).fillna(0)
 top_products = top_products.nlargest(10, selected_kpi_col)
 
-# ---- Side-by-Side Charts ----
+# Side-by-side charts
 col_left, col_right = st.columns(2)
 
 with col_left:
@@ -102,3 +104,17 @@ with col_right:
                      template="plotly_white")
     fig_bar.update_layout(height=400, yaxis={"categoryorder": "total ascending"})
     st.plotly_chart(fig_bar, use_container_width=True)
+
+# Additional insights
+st.subheader("Additional Insights")
+if st.checkbox("Show Detailed Data"):
+    st.write(df)
+
+# Download data option
+if st.button("Download Filtered Data"):
+    @st.cache_data
+    def convert_df(df):
+        return df.to_csv(index=False).encode('utf-8')
+
+    csv = convert_df(df)
+    st.download_button("Download CSV", csv, "filtered_data.csv", "text/csv", key='download-csv')
